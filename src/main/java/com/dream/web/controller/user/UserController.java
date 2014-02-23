@@ -1,0 +1,286 @@
+package com.dream.web.controller.user;
+
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.UUID;
+
+import javax.imageio.ImageIO;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.util.FileCopyUtils;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.alibaba.fastjson.JSONObject;
+import com.dream.common.Constants;
+import com.dream.common.constants.ErrorCode;
+import com.dream.common.controller.BaseCRUDController;
+import com.dream.common.entity.User;
+import com.dream.common.inject.annotation.BaseComponent;
+import com.dream.web.service.jpush.UserJpush;
+import com.dream.web.service.user.PasswordService;
+import com.dream.web.service.user.UserService;
+import com.google.code.kaptcha.Producer;
+
+import encode.BASE64Encoder;
+
+/**
+ * User: xiaorui.lu 
+ * Date: 2013年12月13日 下午5:31:56
+ */
+
+@Controller
+@RequestMapping("/user")
+public class UserController extends BaseCRUDController<User, Long> {
+
+	final Logger logger = LoggerFactory.getLogger(getClass());
+
+	private Producer captchaProducer = null;
+
+	@Autowired
+	public void setCaptchaProducer(Producer captchaProducer) {
+		this.captchaProducer = captchaProducer;
+	}
+
+	@Autowired
+	@BaseComponent
+	private UserService userService;
+
+	@Autowired
+	private PasswordService passwordService;
+
+	/**
+	 * 注册用户
+	 * 
+	 * @param request
+	 * @param response
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping(value = "/register", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	public @ResponseBody
+	User register(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		String guid = UUID.randomUUID().toString();
+		response.setDateHeader("Expires", 0);
+		response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+		response.addHeader("Cache-Control", "post-check=0, pre-check=0");
+		response.setHeader("Pragma", "no-cache");
+		String capText = captchaProducer.createText();
+		request.getSession().setAttribute(Constants.GUID, guid);
+		request.getSession().setAttribute(com.google.code.kaptcha.Constants.KAPTCHA_SESSION_KEY, capText);
+		logger.debug("register Get请求处理完毕");
+		User user = new User();
+		user.setCheckcode(capText);
+		user.setGuid(guid);
+		return user;
+	}
+
+	/**
+	 * 注册添加用户
+	 * 
+	 * @param user
+	 * @param session
+	 * @return
+	 */
+	@RequestMapping(value = "/register", method = RequestMethod.POST, headers = "Content-Type=multipart/form-data")
+	public @ResponseBody
+	ErrorCode addUser(@RequestParam("userJson") String userJson, @RequestParam("file") MultipartFile file) {
+		User user = JSONObject.parseObject(userJson, User.class);
+		if (!file.isEmpty()) {
+			byte[] bytes = null;
+			FileOutputStream fos = null;
+			try {
+				user.setId(null);
+				userService.save(user);
+				bytes = file.getBytes();
+				String iconPath = "d:/upload/touxiang/" + user.getId() + "_" + file.getOriginalFilename();
+				fos = new FileOutputStream(iconPath);
+				fos.write(bytes); // 写入文件
+				user.setRole(false);
+				user.setIconPath(iconPath);
+				return ErrorCode.SUCCESS;
+			} catch (IOException exp) {
+				logger.info("error processing in the register user", exp);
+				return ErrorCode.FAILED;
+			} finally {
+				if (fos != null)
+					try {
+						fos.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+			}
+		} else {
+			return new ErrorCode(ErrorCode.CODE_FILE_NOT_EXIST, "file upload failed!");
+		}
+	}
+
+	/*
+	 * public ErrorCode addUser(@RequestBody User user, HttpSession session) {
+	 * String guid = (String) session.getAttribute(Constants.GUID); String
+	 * checkcode = (String)
+	 * session.getAttribute(com.google.code.kaptcha.Constants
+	 * .KAPTCHA_SESSION_KEY); if
+	 * (!(checkcode.equalsIgnoreCase(user.getCheckcode()) &&
+	 * guid.endsWith(user.getGuid()))) { // 忽略验证码大小写 return new
+	 * ErrorCode(ErrorCode.CODE_CHECK_ERROR, "checkcode"); }
+	 * userService.save(user); logger.debug("register Post请求处理完毕"); return
+	 * ErrorCode.SUCCESS; }
+	 */
+
+	@RequestMapping(value = "/login", method = RequestMethod.POST, headers = "Content-Type=application/x-www-form-urlencoded")
+	public @ResponseBody
+	ErrorCode login(@RequestParam("name") String name, @RequestParam("password") String password) {
+		try {
+			User user = userService.login(name, password);
+			return ErrorCode.SUCCESS;
+		} catch (Exception exp) {
+			System.out.println(ErrorCode.FAILED);
+			exp.printStackTrace();
+			return ErrorCode.FAILED;
+		}
+	}
+	
+	@RequestMapping(value = "/udidLogin", method = RequestMethod.POST, headers = "Content-Type=application/x-www-form-urlencoded")
+    public @ResponseBody ErrorCode login(@RequestParam("udid") String udid){
+       User user = userService.loginByUdid(udid);
+       if(user != null){
+         //UserJpush.loginJpush(udid, user);
+         return new ErrorCode(ErrorCode.CODE_SUCCESS, user.getName());
+       }
+       return ErrorCode.NOT_EXIT;
+    }
+   
+   @RequestMapping(value = "/loginJpush", method = RequestMethod.POST, headers = "Content-Type=application/x-www-form-urlencoded")
+   public @ResponseBody void jpush(@RequestParam("udid") String udid){
+      User user = userService.loginByUdid(udid);
+      if(user != null){
+        UserJpush.loginJpush(udid, user);
+      }
+   }
+	
+	
+	@RequestMapping(value = "/showIcon")
+	public @ResponseBody String showIcon() throws IOException {
+		Resource res = new FileSystemResource("D:/upload/touxiang/5_Koala.jpg");
+		byte[] fileData = FileCopyUtils.copyToByteArray(res.getInputStream());
+		fileData = scaleImage(fileData, 100, 100);
+		BASE64Encoder encoder = new BASE64Encoder();
+		return encoder.encode(fileData);// 返回Base64编码过的字节数组字符串
+	}
+	
+/*	@RequestMapping(value = "/showIcon")
+	public @ResponseBody
+	void showIcon(HttpServletResponse response) {
+		InputStream inputStream = null;
+		InputStream fis = null;
+		OutputStream outputSream = null;
+		try {
+			fis = new FileInputStream("D:/upload/touxiang/5_Koala.jpg");
+			int b = fis.available(); // 得到文件大小
+			byte data[] = new byte[b];
+			fis.read(data); // 读数据
+			data = scaleImage(data, 300, 300);  
+			response.setContentType(MediaType.IMAGE_JPEG_VALUE); // 设置返回的文件类型
+			response.setCharacterEncoding("UTF-8");
+			outputSream = response.getOutputStream();
+			inputStream = new ByteArrayInputStream(data);
+			int len = 0;
+			byte buf[] = new byte[1024];
+			while ((len = inputStream.read(buf, 0, 1024)) != -1) {
+				outputSream.write(buf, 0, len);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			if (outputSream != null) {
+				try {
+					outputSream.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			if (inputStream != null) {
+				try {
+					inputStream.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			if (fis != null) {
+				try {
+					fis.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
+	}
+*/	
+	public static byte[] scaleImage(byte[] data, int width, int height) throws IOException {
+		BufferedImage buffered_oldImage = ImageIO.read(new ByteArrayInputStream(data));
+		int imageOldWidth = buffered_oldImage.getWidth();
+		int imageOldHeight = buffered_oldImage.getHeight();
+		double scale_x = (double) width / imageOldWidth;
+		double scale_y = (double) height / imageOldHeight;
+		double scale_xy = Math.min(scale_x, scale_y);
+		int imageNewWidth = (int) (imageOldWidth * scale_xy);
+		int imageNewHeight = (int) (imageOldHeight * scale_xy);
+		BufferedImage buffered_newImage = new BufferedImage(imageNewWidth, imageNewHeight, BufferedImage.TYPE_INT_RGB);
+		buffered_newImage.getGraphics().drawImage(buffered_oldImage.getScaledInstance(imageNewWidth, imageNewHeight, BufferedImage.SCALE_SMOOTH), 0, 0, null);
+		buffered_newImage.getGraphics().dispose();
+		ByteArrayOutputStream outPutStream = new ByteArrayOutputStream();
+		ImageIO.write(buffered_newImage, "jpeg", outPutStream);
+		return outPutStream.toByteArray();
+	}
+
+
+	/**
+	 * 查询用户信息
+	 * 
+	 * @see 访问该方法的路径就应该是"/user/具体的用户id"
+	 * @see 这里value="/{username}"的写法，需要格外注意一下，它是一个路径变量，此时用来接收前台的一个资源
+	 * @see 这时value="/{username}"就会到方法参数中找@PathVariable String
+	 *      username，并将路径变量值传给username参数
+	 */
+	@RequestMapping(value = "/{id}", method = RequestMethod.GET)
+	public String show(@PathVariable long id, Model model) {
+		User user = userService.findOne(id);
+		model.addAttribute("user", user);
+		return viewName("show");
+	}
+
+	/**
+	 * 编辑用户信息
+	 * 
+	 * @see 访问该方法的路径就应该是"/user/具体的用户名/update"
+	 */
+	@RequestMapping(value = "/{id}/update", method = RequestMethod.GET)
+	public String update(@PathVariable long id, Model model) {
+		User user = userService.findOne(id);
+		model.addAttribute("user", user);
+		return viewName("update");
+	}
+
+}

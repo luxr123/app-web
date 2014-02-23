@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:c="http://www.springframework.org/schema/c"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+		                http://www.springframework.org/schema/beans/spring-beans.xsd
+		                http://www.springframework.org/schema/context 
+		                http://www.springframework.org/schema/context/spring-context.xsd
+		                http://www.springframework.org/schema/mvc
+	                    http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+	<context:annotation-config />
+
+	<context:property-placeholder location="classpath:properties/dev.properties" />
+
+	<!-- 开启controller注解支持 -->
+	<!-- 注意事项请参考：http://jinnianshilongnian.iteye.com/blog/1762632 -->
+	<context:component-scan base-package="com.dream.web"
+		use-default-filters="false">
+		<context:include-filter type="annotation"
+			expression="org.springframework.stereotype.Controller" />
+		<context:include-filter type="annotation"
+			expression="org.springframework.web.bind.annotation.ControllerAdvice" />
+	</context:component-scan>
+
+	<import resource="classpath:config/jpa.xml" />
+
+	<!-- 一个检查员，对进入DispatcherServlet的URL进行筛查，如果发现是静态资源的请求，就将该请求转由Web应用服务器默认的Servlet处理， 
+		如果不是静态资源的请求，才由DispatcherServlet继续处理 -->
+	<!-- 一般Web应用服务器默认的Servlet名称是"default"，因此DefaultServletHttpRequestHandler可以找到它。如果你所有的Web应用服务器的默认Servlet名称不是"default"， 
+		则需要通过default-servlet-name属性显示指定：mvc:default-servlet-handler default-servlet-name="所使用的Web服务器默认使用的Servlet名称" 
+		/> -->
+	<mvc:default-servlet-handler />
+
+	<!-- 配置将Web根路径"/"及类路径下 /META-INF/publicResources/ 的目录映射为/resources路径。假设Web根路径下拥有images、js这两个资源目录,在images下面有bg.gif图片， 
+		在js下面有test.js文件，则可以通过 /resources/images/bg.gif 和 /resources/js/test.js 访问这二个静态资源。 
+		假设WebRoot还拥有images/bg1.gif 及 js/test1.js，则也可以在网页中通过 /resources/images/bg1.gif 
+		及 /resources/js/test1.js 进行引用 -->
+	<!-- <mvc:resources location="/,classpath:/META-INF/publicResources/" mapping="/resources/**"/> -->
+
+	<!-- ViewResolver -->
+	<!-- InternalResourceViewResolver：用于支持Servlet、JSP视图解析 -->
+	<bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="viewClass"
+			value="org.springframework.web.servlet.view.JstlView" />
+		<property name="prefix" value="/WEB-INF/jsp/" />
+		<property name="suffix" value=".jsp" />
+	</bean>
+
+	<!-- 如像帮助页面等不需要进行功能处理，因此直接使用该控制器映射到视图 -->
+	<bean name="/parameterizableView"
+		class="org.springframework.web.servlet.mvc.ParameterizableViewController">
+		<property name="viewName" value="parameterizableView" />
+	</bean>
+
+	<bean name="/jsp/*.html"
+		class="org.springframework.web.servlet.mvc.UrlFilenameViewController">
+		<property name="prefix" value="Url" />
+		<property name="suffix" value="Controller" /> <!-- Url*Controller -->
+	</bean>
+
+	<!-- 会自动注册了validator ConversionService -->
+	<mvc:annotation-driven validator="validator"
+		conversion-service="conversionService" content-negotiation-manager="contentNegotiationManager">
+		<!--enableMatrixVariables="true"> -->
+
+		<!-- 异步支持 默认30秒超时 -->
+		<!-- <mvc:async-support default-timeout="30000" task-executor="executor"/> -->
+
+		<mvc:message-converters register-defaults="true">
+			<!-- StringHttpMessageConverter编码为UTF-8，防止乱码 -->
+			<bean class="org.springframework.http.converter.StringHttpMessageConverter">
+				<constructor-arg value="UTF-8" />
+				<property name="supportedMediaTypes">
+					<list>
+						<bean class="org.springframework.http.MediaType">
+							<constructor-arg index="0" value="text" />
+							<constructor-arg index="1" value="plain" />
+							<constructor-arg index="2" value="UTF-8" />
+						</bean>
+						<bean class="org.springframework.http.MediaType">
+							<constructor-arg index="0" value="*" />
+							<constructor-arg index="1" value="*" />
+							<constructor-arg index="2" value="UTF-8" />
+						</bean>
+					</list>
+				</property>
+			</bean>
+			<!-- 避免IE执行AJAX时,返回JSON出现下载文件 -->
+			<bean id="mappingJackson2HttpMessageConverter"
+				class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+				<property name="objectMapper">
+					<bean class="com.fasterxml.jackson.databind.ObjectMapper">
+						<property name="dateFormat">
+							<bean class="java.text.SimpleDateFormat">
+								<constructor-arg type="java.lang.String" value="yyyy-MM-dd HH:mm:ss"></constructor-arg>
+							</bean>
+						</property>
+					</bean>
+				</property>
+			</bean>
+		</mvc:message-converters>
+	</mvc:annotation-driven>
+
+	<bean id="messageSource"
+		class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+		<property name="basename" value="classpath:messages" />
+		<property name="fileEncodings" value="utf-8" />
+		<property name="cacheSeconds" value="120" />
+	</bean>
+
+	<!-- 以下 validator ①注册ConversionService 在使用 mvc:annotation-driven 会 自动注册 -->
+	<bean id="validator"
+		class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean">
+		<property name="providerClass" value="org.hibernate.validator.HibernateValidator" />
+		<!-- 如果不加默认到 使用classpath下的 ValidationMessages.properties -->
+		<property name="validationMessageSource" ref="messageSource" />
+	</bean>
+
+	<!-- ②使用ConfigurableWebBindingInitializer注册conversionService -->
+	<bean id="webBindingInitializer"
+		class="org.springframework.web.bind.support.ConfigurableWebBindingInitializer">
+		<property name="conversionService" ref="conversionService" />
+		<property name="validator" ref="validator" />
+	</bean>
+
+	<!-- 内容协商管理器 -->
+	<!--1、首先检查路径扩展名（如my.pdf）；2、其次检查Parameter（如my?format=pdf）；3、检查Accept Header -->
+	<bean id="contentNegotiationManager"
+		class="org.springframework.web.accept.ContentNegotiationManagerFactoryBean">
+		<!-- 扩展名至mimeType的映射,即 /user.json => application/json -->
+		<property name="favorPathExtension" value="true" />
+		<!-- 用于开启 /userinfo/123?format=json 的支持 -->
+		<property name="favorParameter" value="true" />
+		<property name="parameterName" value="format" />
+		<!-- 是否忽略Accept Header -->
+		<property name="ignoreAcceptHeader" value="false" />
+
+		<property name="mediaTypes"> <!--扩展名到MIME的映射；favorPathExtension, favorParameter是true时起作用 -->
+			<value>
+				json=application/json
+				xml=application/xml
+				html=text/html
+			</value>
+		</property>
+		<!-- 默认的content type -->
+		<property name="defaultContentType" value="text/html" />
+	</bean>
+
+	<!-- ==================================20140116===================================== -->
+	<bean id="multipartResolver"
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<!-- 上传拦截，如最大上传值及最小上传值 -->
+		<property name="maxUploadSize" value="1000000" />
+		<property name="maxInMemorySize" value="4096" />
+	</bean>
+
+</beans>
