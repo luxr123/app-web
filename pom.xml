@@ -36,6 +36,24 @@
 			<artifactId>json</artifactId>
 			<version>20131018</version>
 		</dependency>
+		
+		<!-- <dependency>
+			<groupId>cn.jpush.api</groupId>
+			<artifactId>jpush-client</artifactId>
+			<version>2.3.1</version>
+		</dependency> -->
+		
+		<dependency>
+			<groupId>cn.jpush.api</groupId>
+			<artifactId>jpush-java-libraryV2</artifactId>
+			<version>2.0</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+			<version>2.2.4</version>
+		</dependency>
             
 	
 		<dependency>
@@ -86,19 +104,11 @@
 		</dependency>
 		<!-- == jackson end == -->
 		
-		<!-- == jpush begin == -->
 		<dependency>
-			<groupId>cn.jpush.api</groupId>
-			<artifactId>jpush-java-libraryV2</artifactId>
-			<version>2.0</version>
-		</dependency>
-
-		<dependency>
-			<groupId>com.google.code.gson</groupId>
-			<artifactId>gson</artifactId>
-			<version>2.2.4</version>
-		</dependency>
-		<!-- == jpush end == -->
+			<groupId>org.quartz-scheduler</groupId>
+			<artifactId>quartz</artifactId>
+			<version>1.8.5</version>
+		</dependency>		
 
 	</dependencies>
 
@@ -215,7 +225,7 @@
 				<jpa.generateDdl>false</jpa.generateDdl>
 				<jpa.database>MYSQL</jpa.database>
 				<jpa.databasePlatform>org.hibernate.dialect.MySQL5InnoDBDialect</jpa.databasePlatform>
-				<log.dir>D:/Backup/nexus</log.dir>
+				<log.dir>G:/Backup/nexus</log.dir>
 
 				<shiro.uid.cookie.domain></shiro.uid.cookie.domain>
 				<shiro.uid.cookie.path>/</shiro.uid.cookie.path>

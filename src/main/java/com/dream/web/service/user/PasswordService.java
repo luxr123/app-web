@@ -1,12 +1,8 @@
 package com.dream.web.service.user;
 
-import javax.annotation.PostConstruct;
 
-import net.sf.ehcache.Cache;
-import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +11,8 @@ import com.dream.common.exception.user.UserPasswordNotMatchException;
 import com.dream.common.exception.user.UserPasswordRetryLimitExceedException;
 import com.dream.common.utils.user.UserLogUtils;
 import com.dream.common.web.utils.Md5Utils;
+import com.dream.web.cache.factory.EcacheFactory;
+import com.dream.web.service.user.Config;
 
 /**
  * User: xiaorui.lu 
@@ -23,11 +21,6 @@ import com.dream.common.web.utils.Md5Utils;
 @Service
 public class PasswordService {
 
-	@Autowired
-	private CacheManager ehcacheManager;
-
-	private Cache loginRecordCache;
-
 	@Value(value = "${user.password.maxRetryCount}")
 	private int maxRetryCount = 10;
 
@@ -35,17 +28,12 @@ public class PasswordService {
 		this.maxRetryCount = maxRetryCount;
 	}
 
-	@PostConstruct
-	public void init() {
-		loginRecordCache = ehcacheManager.getCache("loginRecordCache");
-	}
-
 	public void validate(User user, String password) {
-		String name = user.getName();
+		String name = user.getName() + "_retry";
 
 		int retryCount = 0;
 
-		Element cacheElement = loginRecordCache.get(name); ///  ????????? 有问题
+		Element cacheElement = (Element) EcacheFactory.getCacheInstance().getElement(Config.USER_CACHE, name);
 		if (cacheElement != null) {
 			retryCount = (Integer) cacheElement.getObjectValue();
 			if (retryCount >= maxRetryCount) {
@@ -56,7 +44,7 @@ public class PasswordService {
 		}
 
 		if (!matches(user, password)) {
-			loginRecordCache.put(new Element(name, ++retryCount));
+		    EcacheFactory.getCacheInstance().put(Config.USER_CACHE,name, ++retryCount);
 			UserLogUtils.log(name, "passwordError", "password error! password: {} retry count: {}", password, retryCount);
 			throw new UserPasswordNotMatchException();
 		} else {
@@ -69,10 +57,11 @@ public class PasswordService {
 	}
 
 	public void clearLoginRecordCache(String username) {
-		loginRecordCache.remove(username);
+	  EcacheFactory.getCacheInstance().remvoeElement(Config.USER_CACHE,username);
 	}
 
 	public String encryptPassword(String username, String password, String salt) {
 		return Md5Utils.hash(username + password + salt);
 	}
+	
 }

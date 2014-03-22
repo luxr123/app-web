@@ -153,7 +153,7 @@
 	<bean id="multipartResolver"
 		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
 		<!-- 上传拦截，如最大上传值及最小上传值 -->
-		<property name="maxUploadSize" value="1000000" />
+		<property name="maxUploadSize" value="100000000" />
 		<property name="maxInMemorySize" value="4096" />
 	</bean>
 

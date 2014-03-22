@@ -14,6 +14,7 @@ import com.dream.common.exception.user.UserPasswordNotMatchException;
 import com.dream.common.inject.annotation.BaseComponent;
 import com.dream.common.service.BaseService;
 import com.dream.common.utils.user.UserLogUtils;
+import com.dream.web.cache.factory.EcacheFactory;
 import com.dream.web.repository.user.UserRepository;
 import com.google.common.collect.Lists;
 
@@ -23,87 +24,115 @@ import com.google.common.collect.Lists;
 @Service
 public class UserService extends BaseService<User, Long> {
 
-	@Autowired
-	@BaseComponent
-	public UserRepository userRepository;
+  @Autowired
+  @BaseComponent
+  public UserRepository userRepository;
 
-	@Autowired
-	private PasswordService passwordService;
+  @Autowired
+  private PasswordService passwordService;
 
-	public List<User> findAll() {
-		return Lists.newArrayList(userRepository.findAll());
-	}
+  public List<User> findAll() {
+    return Lists.newArrayList(userRepository.findAll());
+  }
 
-	public User findOne(long id) {
-		return userRepository.findOne(id);
-	}
+  public User findOne(long id) {
+    User user = (User)EcacheFactory.getCacheInstance().getElement(Config.USER_CACHE, id);
+    if(user != null){
+      return user;
+    }
+    user= userRepository.findOne(id);
+    EcacheFactory.getCacheInstance().put(Config.USER_CACHE, id, user);
+    return user;
+  }
 
-	public User save(User user) {
-		if (user.getCreatetime() == null) {
-			user.setCreatetime(new Date());
-		}
-		user.randomSalt();
-		user.setPassword(passwordService.encryptPassword(user.getName(), user.getPassword(), user.getSalt()));
+  public User save(User user) {
+    if (user.getCreatetime() == null) {
+      user.setCreatetime(new Date());
+    }
+    user.randomSalt();
+    user.setPassword(passwordService.encryptPassword(user.getName(), user.getPassword(),
+        user.getSalt()));
+    User u = super.save(user);
+    EcacheFactory.getCacheInstance().put(Config.USER_CACHE, u.getId(), u);
+    return u;
+  }
 
-		return super.save(user);
-	}
+  public User update(User user) {
+    User u = super.update(user);
+    if (u != null) {
+      long id = u.getId();
+      EcacheFactory.getCacheInstance().getCache(Config.USER_CACHE).acquireWriteLockOnKey(id);
 
-	public User findByName(String name) {
-		if (StringUtils.isEmpty(name)) {
-			return null;
-		}
-		return userRepository.findByName(name);
-	}
+      EcacheFactory.getCacheInstance().put(Config.USER_CACHE, id, u);
 
-	public User login(String name, String password) {
+      EcacheFactory.getCacheInstance().getCache(Config.USER_CACHE).releaseWriteLockOnKey(id);
+    }
+    return u;
+  }
 
-		if (StringUtils.isEmpty(name) || StringUtils.isEmpty(password)) {
-			UserLogUtils.log(name, "loginError", "username is empty");
-			throw new UserNotExistsException();
-		}
-		// 密码如果不在指定范围内 肯定错误
-		if (password.length() < User.PASSWORD_MIN_LENGTH || password.length() > User.PASSWORD_MAX_LENGTH) {
-			UserLogUtils.log(name, "loginError", "password length error! password is between {} and {}", User.PASSWORD_MIN_LENGTH,
-					User.PASSWORD_MAX_LENGTH);
+  public User findByName(String name) {
+    if (StringUtils.isEmpty(name)) {
+      return null;
+    }
+    User u = userRepository.findByName(name);
+    if (u != null) {
+      EcacheFactory.getCacheInstance().put(Config.USER_CACHE, u.getName(), u);
+    }
+    return u;
+  }
 
-			throw new UserPasswordNotMatchException();
-		}
+  public User login(String name, String password) {
 
-		User user = null;
+    if (StringUtils.isEmpty(name) || StringUtils.isEmpty(password)) {
+      UserLogUtils.log(name, "loginError", "username is empty");
+      throw new UserNotExistsException();
+    }
+    // 密码如果不在指定范围内 肯定错误
+    if (password.length() < User.PASSWORD_MIN_LENGTH
+        || password.length() > User.PASSWORD_MAX_LENGTH) {
+      UserLogUtils.log(name, "loginError", "password length error! password is between {} and {}",
+          User.PASSWORD_MIN_LENGTH, User.PASSWORD_MAX_LENGTH);
 
-		// 此处需要走代理对象，目的是能走缓存切面
-		UserService proxyUserService = (UserService) AopContext.currentProxy();
-		if (maybeUsername(name)) {
-			user = proxyUserService.findByName(name);
-		}
+      throw new UserPasswordNotMatchException();
+    }
 
-		if (user == null) {
-			UserLogUtils.log(name, "loginError", "user is not exists!");
-			throw new UserNotExistsException();
-		}
+    User user = null;
 
-		passwordService.validate(user, password);
+    // 此处需要走代理对象，目的是能走缓存切面
+    UserService proxyUserService = (UserService) AopContext.currentProxy();
+    if (maybeUsername(name)) {
+      user = proxyUserService.findByName(name);
+    }
 
-		UserLogUtils.log(name, "loginSuccess", "");
-		return user;
-	}
+    if (user == null) {
+      UserLogUtils.log(name, "loginError", "user is not exists!");
+      return null;
+      // throw new UserNotExistsException();
+    }
 
-	public User loginByUdid(String udid) {
-		if (StringUtils.isEmpty(udid)) {
-			return null;
-		}
-		return userRepository.findByUdid(udid);
-	}
+    passwordService.validate(user, password);
+    EcacheFactory.getCacheInstance().put(Config.USER_CACHE, user.getId(), user);
+    UserLogUtils.log(name, "loginSuccess", "");
+    return user;
+  }
 
-	private boolean maybeUsername(String username) {
-		if (!username.matches(User.NAME_PATTERN)) {
-			return false;
-		}
-		// 如果用户名不在指定范围内也是错误的
-		if (username.length() < User.USERNAME_MIN_LENGTH || username.length() > User.USERNAME_MAX_LENGTH) {
-			return false;
-		}
+  public User loginByUdid(String udid) {
+    if (StringUtils.isEmpty(udid)) {
+      return null;
+    }
+    return userRepository.findByUdid(udid);
+  }
 
-		return true;
-	}
+  private boolean maybeUsername(String username) {
+    if (!username.matches(User.NAME_PATTERN)) {
+      return false;
+    }
+    // 如果用户名不在指定范围内也是错误的
+    if (username.length() < User.USERNAME_MIN_LENGTH
+        || username.length() > User.USERNAME_MAX_LENGTH) {
+      return false;
+    }
+
+    return true;
+  }
 }

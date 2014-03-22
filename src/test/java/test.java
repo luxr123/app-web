@@ -23,30 +23,25 @@ public class test implements Serializable {
 	}
 
 	public static void main(String[] args) {
-//		test a = new test("Hulk", "myLittlePony");
-//		System.out.println("logon a = " + a);
-//		try {
-//			ObjectOutputStream o = new ObjectOutputStream(new FileOutputStream("Logon.out"));
-//			o.writeObject(a);
-//			o.close();
-//			// Delay:
-//			int seconds = 5;
-//			long t = System.currentTimeMillis() + seconds * 1000;
-//			while (System.currentTimeMillis() < t)
-//				;
-//			// Now get them back:
-//			ObjectInputStream in = new ObjectInputStream(new FileInputStream("Logon.out"));
-//			System.out.println("Recovering object at " + new Date());
-//			a = (test) in.readObject();
-//			System.out.println("logon a = " + a);
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-		
-		String NAME_PATTERN = "^[\\u4E00-\\u9FA5\\uf900-\\ufa2d_a-zA-Z][\\u4E00-\\u9FA5\\uf900-\\ufa2d\\w]{1,19}$";
-		
-		System.out.println("111我我我".matches(NAME_PATTERN));
-		
+		test a = new test("Hulk", "myLittlePony");
+		System.out.println("logon a = " + a);
+		try {
+			ObjectOutputStream o = new ObjectOutputStream(new FileOutputStream("Logon.out"));
+			o.writeObject(a);
+			o.close();
+			// Delay:
+			int seconds = 5;
+			long t = System.currentTimeMillis() + seconds * 1000;
+			while (System.currentTimeMillis() < t)
+				;
+			// Now get them back:
+			ObjectInputStream in = new ObjectInputStream(new FileInputStream("Logon.out"));
+			System.out.println("Recovering object at " + new Date());
+			a = (test) in.readObject();
+			System.out.println("logon a = " + a);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 } // /:~
 

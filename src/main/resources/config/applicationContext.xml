@@ -57,6 +57,7 @@
     
 	<import resource="classpath:config/jpa.xml" />
 	<import resource="classpath:config/spring-config-cache.xml"/>
+	<import resource="classpath:config/quartz.xml"/>
 	<!-- <import resource="classpath:config/spring-config-shiro.xml"/> -->
 	
 
