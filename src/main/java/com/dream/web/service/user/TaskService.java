@@ -1,10 +1,10 @@
 package com.dream.web.service.user;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.dream.common.entity.UserTask;
 import com.dream.common.inject.annotation.BaseComponent;
@@ -19,17 +19,14 @@ public class TaskService extends BaseService<UserTask, Long> {
   @BaseComponent
   public TaskRepository taskRepository;
 
+  @Transactional
   public UserTask save(UserTask task) {
-    if (task.getCreatetime() == null) {
-      SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-      String currDate = sdf.format(new Date());
-      task.setCreatetime(currDate);
-    }
     UserTask t = super.save(task);
     EcacheFactory.getCacheInstance().put(Config.TASK_CACHE, t.getId(), t);
     return t;
   }
 
+  @Transactional
   public UserTask update(UserTask task) {
     UserTask t = super.update(task);
     if (t != null) {
@@ -51,5 +48,25 @@ public class TaskService extends BaseService<UserTask, Long> {
     task= taskRepository.findOne(id);
     EcacheFactory.getCacheInstance().put(Config.TASK_CACHE, id, task);
     return task;
+  }
+  
+  public List<UserTask> findByLastId(long lastTaskId, int spare){
+    return taskRepository.findByLastId(lastTaskId, spare);
+  }
+  
+  public int getSuccessCount(long taskId){
+    return taskRepository.getSuccessCount(taskId);
+  }
+  
+  public int getWaitCount(long taskId){
+    return taskRepository.getWaitCount(taskId);
+  }
+  
+  public List<UserTask> findAllByUserId(long userId){
+    return taskRepository.findAllByUserId(userId);
+  }
+  
+  public List<UserTask> findLiveByUserId(long userId, long beginId){
+    return taskRepository.findLiveByUserId(userId, beginId);
   }
 }

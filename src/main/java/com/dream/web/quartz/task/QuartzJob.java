@@ -1,6 +1,5 @@
 package com.dream.web.quartz.task;
 
-import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -25,6 +24,9 @@ public class QuartzJob {
   @Autowired
   @BaseComponent
   private  TaskService taskService;
+  
+  
+  @SuppressWarnings("unchecked")
   public void work()  {
     //addTask();
     Cache cache = EcacheFactory.getCacheInstance().getCache(Config.TASK_CACHE);

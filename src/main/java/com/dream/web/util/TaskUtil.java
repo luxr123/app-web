@@ -18,10 +18,13 @@ import org.springframework.util.FileCopyUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.dream.web.service.user.Config;
+import com.sun.image.codec.jpeg.JPEGCodec;  
+import com.sun.image.codec.jpeg.JPEGImageEncoder;
 
 import encode.BASE64Encoder;
 
 
+@SuppressWarnings("restriction")
 public class TaskUtil {
   
   final Logger logger = LoggerFactory.getLogger(getClass());
@@ -77,20 +80,12 @@ public class TaskUtil {
               * Image.SCALE_SMOOTH 的缩略算法 生成缩略图片的平滑度的 
               * 优先级比速度高 生成的图片质量比较好 但速度慢 
               */   
-             tag.getGraphics().drawImage(img.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH), 0, 0, null);
-             
-/*             FileOutputStream out = new FileOutputStream(outputPath);  
+             tag.getGraphics().drawImage(img.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH), 0, 0, null);  
+             FileOutputStream out = new FileOutputStream(outputPath);  
              //JPEGImageEncoder可适用于其他图片类型的转换   
-             JPEGImageEncoder encoder = JPEGCodec.createJPEGEncoder(out);
-             encoder.encode(tag);
-             out.close();      */
-             
-             String formatName = outputPath.substring(outputPath.lastIndexOf(".") + 1);
-             //FileOutputStream out = new FileOutputStream(outputPath);
-             //JPEGImageEncoder encoder = JPEGCodec.createJPEGEncoder(out);
-             //encoder.encode(tag);
-             ImageIO.write(tag, /*"GIF"*/ formatName /* format desired */ , new File(outputPath) /* target */ );
-             
+             JPEGImageEncoder encoder = JPEGCodec.createJPEGEncoder(out);   
+             encoder.encode(tag);   
+             out.close();   
           }   
       } catch (IOException ex) {   
           ex.printStackTrace();   
@@ -105,9 +100,10 @@ public class TaskUtil {
    * @param outputHeight
    * @throws IOException
    */
-  public static void compressPic(String inputPath, int outputWidth, int outputHeight) {  
+  public static String compressPic(String inputPath, int outputWidth, int outputHeight) {  
     String outputPath = convertPath(inputPath,Config.COMPRESS_ICON_DIR);
     compressPic(inputPath, outputPath, outputWidth, outputHeight, true);
+    return outputPath;
 }
   
   /**
@@ -134,18 +130,13 @@ public class TaskUtil {
    * 返回图片流
    * @param path  文件路径
    * @return fileStr
+   * @throws IOException 
    */
-  public static String iconToByte(String path){
+  public static String iconToByte(String path) throws IOException{
     Resource res = new FileSystemResource(path);
-    String fileStr = null;
-    try {
-      byte[] fileData = FileCopyUtils.copyToByteArray(res.getInputStream());
-      BASE64Encoder encoder = new BASE64Encoder();
-      fileStr = encoder.encode(fileData);// 返回Base64编码过的字节数组字符串
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    return fileStr;
+    byte[] fileData = FileCopyUtils.copyToByteArray(res.getInputStream());
+    BASE64Encoder encoder = new BASE64Encoder();
+    return encoder.encode(fileData);// 返回Base64编码过的字节数组字符串
   }
   
   /**

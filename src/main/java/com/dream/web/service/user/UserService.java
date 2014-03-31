@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import com.dream.common.entity.User;
@@ -45,6 +46,7 @@ public class UserService extends BaseService<User, Long> {
     return user;
   }
 
+  @Transactional
   public User save(User user) {
     if (user.getCreatetime() == null) {
       user.setCreatetime(new Date());
@@ -56,7 +58,22 @@ public class UserService extends BaseService<User, Long> {
     EcacheFactory.getCacheInstance().put(Config.USER_CACHE, u.getId(), u);
     return u;
   }
+  
+  @SuppressWarnings("unchecked")
+  @Transactional
+  public int setUdidEmpity(String udid){
+    
+     int result =userRepository.setUdidEmpity(udid);
+     List<Long> keys = EcacheFactory.getCacheInstance().getCache(Config.USER_CACHE).getKeys();
+     for(long key: keys){
+       if( ((User)EcacheFactory.getCacheInstance().getElement(Config.USER_CACHE, key)).getUdid().equals(udid) ){
+         EcacheFactory.getCacheInstance().remvoeElement(Config.USER_CACHE, key);
+       }
+     }
+     return result;
+  }
 
+  @Transactional
   public User update(User user) {
     User u = super.update(user);
     if (u != null) {
@@ -70,15 +87,24 @@ public class UserService extends BaseService<User, Long> {
     return u;
   }
 
+  @SuppressWarnings("unchecked")
   public User findByName(String name) {
     if (StringUtils.isEmpty(name)) {
       return null;
     }
-    User u = userRepository.findByName(name);
-    if (u != null) {
-      EcacheFactory.getCacheInstance().put(Config.USER_CACHE, u.getName(), u);
+    List<Long> keys = EcacheFactory.getCacheInstance().getCache(Config.USER_CACHE).getKeys();
+    User user = null;
+    for(long key : keys){
+      user = (User)EcacheFactory.getCacheInstance().getElement(Config.USER_CACHE, key);
+      if( user.getName().equals(name) ){
+        return user;
+      }
     }
-    return u;
+    user = userRepository.findByName(name);
+    if (user != null) {
+      EcacheFactory.getCacheInstance().put(Config.USER_CACHE, user.getId(), user);
+    }
+    return user;
   }
 
   public User login(String name, String password) {

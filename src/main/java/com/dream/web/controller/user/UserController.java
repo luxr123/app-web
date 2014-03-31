@@ -1,5 +1,6 @@
 package com.dream.web.controller.user;
 
+import java.io.IOException;
 import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
@@ -95,9 +96,9 @@ public class UserController extends BaseCRUDController<User, Long> {
       user.setId(0l);
        if (!file.isEmpty()) {
           String iconPath = TaskUtil.saveImgFile(file, Config.USER_ICON_DIR);  //保存原图
-          TaskUtil.compressPic(iconPath, Config.COMPRESS_USER_ICON_WIDTH, Config.COMPRESS_USER_ICON_HEIGHT); //保存缩略图
+          String compressPath = TaskUtil.compressPic(iconPath, Config.COMPRESS_USER_ICON_WIDTH, Config.COMPRESS_USER_ICON_HEIGHT); //保存缩略图
           user.setRole(false);
-          user.setIconPath(iconPath);
+          user.setIconPath(compressPath);
           User u = userService.save(user);
           return new ErrorCode(ErrorCode.CODE_SUCCESS, u.getName() + "," + String.valueOf(u.getId()));                  
         } else {
@@ -109,9 +110,12 @@ public class UserController extends BaseCRUDController<User, Long> {
 	public @ResponseBody ErrorCode login(@RequestParam("name") String name, @RequestParam("password") String password,@RequestParam("udid") String udid){
 		System.out.println("enter login name:" + name + "-- password:" + password);
 		User user = userService.login(name, password);
-		if(user != null){
-		  user.setUdid(udid);
-		  userService.update(user);
+		if( user != null && !(user.getUdid().equals(udid)) ){
+		  if(!udid.equals(user.getUdid())){		    
+		    userService.setUdidEmpity(udid);
+		    user.setUdid(udid);
+	        userService.update(user);
+		  }
 		  return new ErrorCode(ErrorCode.CODE_SUCCESS, user.getName() + "," + user.getId());
 		}
 		 return ErrorCode.NOT_EXIT;
@@ -134,19 +138,68 @@ public class UserController extends BaseCRUDController<User, Long> {
             UserJpush.loginJpush(udid, user);
           }
        }
-	   
-	    @RequestMapping(value = "/getCompressIcon", method = RequestMethod.POST)
+	   /**
+	    * 获得压缩图
+	    * @param id
+	    * @return
+	    */
+	  /*  @RequestMapping(value = "/getCompressIcon", method = RequestMethod.POST)
 	    public @ResponseBody String getCompressIcon(@RequestParam("id") String id) {
 	      User user = userService.findOne(Long.parseLong(id));
-	      String compressIcon = TaskUtil.convertPath(user.getIconPath(), Config.COMPRESS_ICON_DIR);
-	      return TaskUtil.iconToByte(compressIcon);// 返回Base64编码过的字节数组字符串
-	  }
+	      String compressIcon = user.getIconPath();
+	      String fileStream = null;
+	        try {
+	          fileStream = TaskUtil.iconToByte(compressIcon);
+	        } catch (IOException e) {
+	          e.printStackTrace();
+	        }
+	       return fileStream;
+	  }*/
+	   
+	   @RequestMapping(value = "/getCompressIcon", method = RequestMethod.POST)
+       public @ResponseBody String getCompressIcon(@RequestParam("url") String compressPath) {
+         String fileStream = null;
+           try {
+             fileStream = TaskUtil.iconToByte(compressPath);
+           } catch (IOException e) {
+             e.printStackTrace();
+           }
+          return fileStream;
+     }
 	    
-	    @RequestMapping(value = "/getOriginalIcon", method = RequestMethod.POST)
+	    
+	    
+	    /**
+	     * 获得原图
+	     * @param id
+	     * @return
+	     */
+	    /*@RequestMapping(value = "/getOriginalIcon", method = RequestMethod.POST)
         public @ResponseBody String getOriginalIcon(@RequestParam("id") String id) {
           User user = userService.findOne(Long.parseLong(id));
-          return TaskUtil.iconToByte(user.getIconPath());// 返回Base64编码过的字节数组字符串
-      }
+          String originalIcon = TaskUtil.convertPath(user.getIconPath(), Config.ORGINAL_ICON_DIR);
+          String fileStream = null;
+          try {
+            fileStream = TaskUtil.iconToByte(originalIcon);
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+         return fileStream;// 返回Base64编码过的字节数组字符串
+      }*/
+	   
+	   
+	   @RequestMapping(value = "/getOriginalIcon", method = RequestMethod.POST)
+       public @ResponseBody String getOriginalIcon(@RequestParam("url") String compressPath) {
+         String originalPath = TaskUtil.convertPath(compressPath, Config.ORGINAL_ICON_DIR);
+         String fileStream = null;
+         try {
+           fileStream = TaskUtil.iconToByte(originalPath);
+         } catch (IOException e) {
+           e.printStackTrace();
+         }
+        return fileStream;// 返回Base64编码过的字节数组字符串
+     }
+	   
 
 	    /*public static byte[] scaleImage(byte[] data, int width, int height) throws IOException {
 	        BufferedImage buffered_oldImage = ImageIO.read(new ByteArrayInputStream(data));
