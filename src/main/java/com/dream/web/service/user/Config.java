@@ -21,11 +21,11 @@ public class Config {
     
     public static final String COMPRESS_ICON_DIR = "compressPic"; //保存缩略图片文件夹
     
-//    public static final String USER_ICON_DIR = "G:/upload/portrait";  //保存原始图片的文件夹
-    public static final String USER_ICON_DIR = "/Users/luxury/app/upload/portrait";  //保存原始图片的文件夹
+    public static final String USER_ICON_DIR = "D:/upload/portrait";  //保存原始图片的文件夹
+//    public static final String USER_ICON_DIR = "/Users/luxury/app/upload/portrait";  //保存原始图片的文件夹
     
-//    public static final String TASK_ICON_DIR = "G:/upload/task"; //保存缩略图片文件夹
-    public static final String TASK_ICON_DIR = "/Users/luxury/app/upload/task"; //保存缩略图片文件夹
+    public static final String TASK_ICON_DIR = "D:/upload/task"; //保存缩略图片文件夹
+//    public static final String TASK_ICON_DIR = "/Users/luxury/app/upload/task"; //保存缩略图片文件夹
     
     public static final int COMPRESS_TASK_ICON_WIDTH = 120; 
     public static final  int COMPRESS_TASK_ICON_HEIGHT = 120; 
