@@ -22,4 +22,7 @@
         <property name="configLocation" value="classpath:ehcache/ehcache_dream.xml"/>
         <property name="shared" value="true"></property>
     </bean>
+    
+    
+
 </beans>

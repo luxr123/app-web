@@ -10,8 +10,8 @@ public class Config {
     
     public static final String VERSION = "0.1.0";
     public static final String TAG = "all";
-    public static final String  TASK_CACHE= "taskRecordCache";
-    public static final String USER_CACHE = "loginRecordCache";
+    public static final String  TASK_CACHE= "freshTaskCache";
+    public static final String USER_CACHE = "userCache";
     public static final int CACHE_DURATION_DAYS = 7;
     public static final int MESSAGE_CACHE_MAX_NUMBER = 100;
     public static final int RECENT_CHATS_CACHE_MAX_NUMBER = 10;
@@ -32,7 +32,9 @@ public class Config {
     public static final  int COMPRESS_USER_ICON_HEIGHT = 80; 
     
     public static final int LOADING_TASK_COUNT = 10;
-
+    
+    public static final int INIT_TASK_COUNT__CACHE = 100;
+    
     
 }
 

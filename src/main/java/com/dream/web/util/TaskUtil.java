@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 
@@ -17,6 +18,8 @@ import org.springframework.core.io.Resource;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.alibaba.fastjson.JSONObject;
+import com.dream.common.constants.ErrorCode;
 import com.dream.web.service.user.Config;
 import com.sun.image.codec.jpeg.JPEGCodec;  
 import com.sun.image.codec.jpeg.JPEGImageEncoder;
@@ -184,4 +187,12 @@ public class TaskUtil {
       }
       return filePath;
     }
+    
+    public static String toJSONString(String key ,List<Object> value, ErrorCode code){
+      JSONObject jsonObject = new JSONObject();
+      jsonObject.put(key, value);
+      jsonObject.put("return", code);
+      return jsonObject.toJSONString(); 
+    }
+    
 }

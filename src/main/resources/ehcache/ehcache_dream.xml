@@ -15,9 +15,9 @@
             diskExpiryThreadIntervalSeconds="100"    
             memoryStoreEvictionPolicy="LRU"    
             />
-   <!-- 登录记录缓存 锁定10分钟 -->
-    <cache name="loginRecordCache"
-           maxEntriesLocalHeap="2000"
+   <!-- 登录记录缓存-->
+    <cache name="userCache"
+           maxEntriesLocalHeap="10000"
            eternal="false"
            timeToIdleSeconds="0"
            timeToLiveSeconds="0"
@@ -26,14 +26,25 @@
            memoryStoreEvictionPolicy="LRU">
     </cache>
     
-    <!-- 任务记录缓存 锁定10分钟 -->
-    <cache name="taskRecordCache"
-           maxEntriesLocalHeap="10000"
+    <!-- 任务记录缓存,存储最新的任务1000条 -->
+    <cache name="freshTaskCache"
+           maxEntriesLocalHeap="1000"
            eternal="false"
            timeToIdleSeconds="0"
            timeToLiveSeconds="0"
            overflowToDisk="false"
            statistics="true"
-           memoryStoreEvictionPolicy="LRU">
+           memoryStoreEvictionPolicy="FIFO">
+    </cache>
+    
+    <!-- 任务记录缓存，存储未过时任务的结束时间除最新的 -->
+    <cache name="taskEndtimeCache"
+           maxEntriesLocalHeap="100000"
+           eternal="false"
+           timeToIdleSeconds="0"
+           timeToLiveSeconds="0"
+           overflowToDisk="false"
+           statistics="true"
+      >
     </cache>
 </ehcache>

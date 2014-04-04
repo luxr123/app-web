@@ -6,6 +6,7 @@ import org.springframework.beans.factory.xml.XmlBeanFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheException;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
 
@@ -15,6 +16,7 @@ public class EcacheFactory{
   private  CacheManager manager;
   private static EcacheFactory ecacheFactory;
   
+  @SuppressWarnings("deprecation")
   public EcacheFactory(String path){
     // manager = CacheManager.create(path);
   
@@ -44,7 +46,26 @@ public class EcacheFactory{
   public Object getElement(String cacheName, Object key){
     Cache cache = manager.getCache(cacheName);
     if(cache != null){
-      Element element = cache.get(key);
+      Element  element = (Element) cache.get(key);
+      return element == null ? null : element.getObjectValue();
+    }
+    return null;
+  }
+  
+  
+  public Object cloneElement(String cacheName, Object key){
+    Cache cache = manager.getCache(cacheName);
+    if(cache != null){
+      Element element = null;
+      try {
+        element = (Element) cache.get(key).clone();
+      } catch (IllegalStateException e) {
+        e.printStackTrace();
+      } catch (CacheException e) {
+        e.printStackTrace();
+      } catch (CloneNotSupportedException e) {
+        e.printStackTrace();
+      }
       return element == null ? null : element.getObjectValue();
     }
     return null;

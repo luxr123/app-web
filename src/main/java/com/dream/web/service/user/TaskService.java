@@ -3,6 +3,8 @@ package com.dream.web.service.user;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,8 +52,58 @@ public class TaskService extends BaseService<UserTask, Long> {
     return task;
   }
   
-  public List<UserTask> findByLastId(long lastTaskId, int spare){
-    return taskRepository.findByLastId(lastTaskId, spare);
+  public List<UserTask> findByLastId(long lastTaskId,final  int spare){
+    Pageable pageable = new Pageable() {
+      
+      @Override
+      public Pageable previousOrFirst() {
+        // TODO Auto-generated method stub
+        return null;
+      }
+      
+      @Override
+      public Pageable next() {
+        // TODO Auto-generated method stub
+        return null;
+      }
+      
+      @Override
+      public boolean hasPrevious() {
+        // TODO Auto-generated method stub
+        return false;
+      }
+      
+      @Override
+      public Sort getSort() {
+        // TODO Auto-generated method stub
+        return null;
+      }
+      
+      @Override
+      public int getPageSize() {
+        // TODO Auto-generated method stub
+        return spare;
+      }
+      
+      @Override
+      public int getPageNumber() {
+        // TODO Auto-generated method stub
+        return 0;
+      }
+      
+      @Override
+      public int getOffset() {
+        // TODO Auto-generated method stub
+        return 0;
+      }
+      
+      @Override
+      public Pageable first() {
+        // TODO Auto-generated method stub
+        return null;
+      }
+    };
+    return taskRepository.findByLastId(lastTaskId, pageable);
   }
   
   public int getSuccessCount(long taskId){
@@ -68,5 +120,9 @@ public class TaskService extends BaseService<UserTask, Long> {
   
   public List<UserTask> findLiveByUserId(long userId, long beginId){
     return taskRepository.findLiveByUserId(userId, beginId);
+  }
+
+  public List<UserTask> loadPartTask(Pageable pageable) {
+    return taskRepository.loadPartTask(pageable);
   }
 }

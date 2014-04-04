@@ -199,26 +199,7 @@ public class UserController extends BaseCRUDController<User, Long> {
          }
         return fileStream;// 返回Base64编码过的字节数组字符串
      }
-	   
-
-	    /*public static byte[] scaleImage(byte[] data, int width, int height) throws IOException {
-	        BufferedImage buffered_oldImage = ImageIO.read(new ByteArrayInputStream(data));
-	        int imageOldWidth = buffered_oldImage.getWidth();
-	        int imageOldHeight = buffered_oldImage.getHeight();
-	        double scale_x = (double) width / imageOldWidth;
-	        double scale_y = (double) height / imageOldHeight;
-	        double scale_xy = Math.min(scale_x, scale_y);
-	        int imageNewWidth = (int) (imageOldWidth * scale_xy);
-	        int imageNewHeight = (int) (imageOldHeight * scale_xy);
-	        BufferedImage buffered_newImage = new BufferedImage(imageNewWidth, imageNewHeight, BufferedImage.TYPE_INT_RGB);
-	        buffered_newImage.getGraphics().drawImage(
-	                buffered_oldImage.getScaledInstance(imageNewWidth, imageNewHeight, BufferedImage.SCALE_SMOOTH), 0, 0,
-	                null);
-	        buffered_newImage.getGraphics().dispose();
-	        ByteArrayOutputStream outPutStream = new ByteArrayOutputStream();
-	        ImageIO.write(buffered_newImage, "jpeg", outPutStream);
-	        return outPutStream.toByteArray();
-	    }*/
+	  
 	
 	
 	@RequestMapping(value = "/uploadImg", method = {RequestMethod.POST,RequestMethod.GET})

@@ -59,6 +59,9 @@
 	<import resource="classpath:config/spring-config-cache.xml"/>
 	<import resource="classpath:config/quartz.xml"/>
 	<!-- <import resource="classpath:config/spring-config-shiro.xml"/> -->
-	
+
+    <bean id="initTaskEcache" class="com.dream.web.util.InitTaskEcache"> 
+    <constructor-arg name = "taskService" ref="taskService" ></constructor-arg>
+	</bean>
 
 </beans>

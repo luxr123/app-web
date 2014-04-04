@@ -28,7 +28,6 @@ public class QuartzJob {
   
   @SuppressWarnings("unchecked")
   public void work()  {
-    //addTask();
     Cache cache = EcacheFactory.getCacheInstance().getCache(Config.TASK_CACHE);
     logger.debug("当前有 "+cache.getSize()+" 条任务！");
     if(cache != null && cache.getSize() > 0){
@@ -64,7 +63,7 @@ public class QuartzJob {
   private static Runnable deleteTask(final UserTask bean, final TaskService taskService) {
     return new Runnable() {
         public void run() { 
-          System.out.println(" id ："+bean.getId()+"的任务時效到了，从数据库中删除。");
+          System.out.println(" id ："+bean.getId()+"的任务時效到了，数据库标记其为过时。");
           bean.setStatus(1);  //1：代表任务过时
           taskService.update(bean);
         }
